@@ -1,61 +1,52 @@
-const fs = require("fs");
+const Tour = require("../models/tourModel");
 
-const tours = JSON.parse(
-  fs.readFileSync(`${__dirname}/../dev-data/data/tours-simple.json`, "utf-8")
-);
-
-exports.getAllTour = (req, res) => {
-  res.status(200).json({
-    message: "Success",
-    data: {
-      tours,
-    },
-  });
+exports.getAllTour = async (req, res) => {
+  try {
+    const tours = await Tour.find();
+    res.status(200).json({
+      message: "Success",
+      data: {
+        tours,
+      },
+    });
+  } catch (err) {}
 };
-exports.getTour = (req, res) => {
+exports.getTour = async (req, res) => {
   const { id } = req.params;
-  const tour = tours.find((el) => el.id === +id);
-  console.log(tour);
-  if (!tour) {
-    return res.status(404).json({
-      status: 404,
-      message: "No Tour With This Id!",
+  try {
+    const tour = await Tour.findById(id);
+    res.status(200).json({
+      message: "Success",
+      data: {
+        tour,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 400,
+      message: `Invalid Id: ${id}!`,
     });
   }
-  res.status(200).json({
-    message: "Success",
-    data: {
-      tour,
-    },
-  });
 };
-exports.createTour = (req, res) => {
-  const newId = tours[tours.length - 1].id + 1;
+exports.createTour = async (req, res) => {
+  try {
+    const newTour = await Tour.create(req.body);
 
-  const newTour = Object.assign({ id: newId }, req.body);
-  tours.push(newTour);
-
-  fs.writeFile(
-    `${__dirname}/dev-data/data/tours-simple.json`,
-    JSON.stringify(tours),
-    (err) => {
-      res.status(201).json({
-        message: "Succesfully Created!",
-        data: {
-          tour: newTour,
-        },
-      });
-    }
-  );
+    newTour.save({ validateBeforeSave: true });
+    res.status(201).json({
+      message: "Succesfully Created!",
+      data: {
+        tour: newTour,
+      },
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 400,
+      message: "Invalid Data Sent!",
+    });
+  }
 };
 exports.updateTour = (req, res) => {
-  const { id } = req.params;
-  if (+id > tours.length) {
-    return res.status(404).json({
-      status: 404,
-      message: "No Tour With This Id!",
-    });
-  }
   res.status(201).json({
     message: "Succesfully Created!",
     data: {
@@ -65,13 +56,6 @@ exports.updateTour = (req, res) => {
 };
 
 exports.deleteTour = (req, res) => {
-  const { id } = req.params;
-  if (+id > tours.length) {
-    return res.status(404).json({
-      status: 404,
-      message: "No Tour With This Id!",
-    });
-  }
   res.status(204).json({
     message: "Succesfully Created!",
     data: null,
