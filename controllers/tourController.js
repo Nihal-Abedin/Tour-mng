@@ -1,4 +1,5 @@
 const Tour = require("../models/tourModel");
+const APIFeatures = require("../utils/apiFeatures");
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = "5";
@@ -10,53 +11,14 @@ exports.aliasTopTours = (req, res, next) => {
 
 exports.getAllTour = async (req, res) => {
   try {
-    console.log(req.query);
-    const queryObj = { ...req.query };
-    const excludeFields = ["page", "limit", "sort", "fields"];
-    excludeFields.forEach((el) => delete queryObj[el]);
+    const features = new APIFeatures(Tour.find(), req.query)
+      .filter()
+      .sort()
+      .limitFields()
+      .paginate();
 
-    //  for query operators
-    let queryString = JSON.stringify(queryObj);
+    const tours = await features.query;
 
-    queryString = queryString.replace(
-      /\b(gte|gt|lte|lt)\b/g,
-      (match) => `$${match}`
-    );
-    console.log(JSON.parse(queryString));
-
-    let query = Tour.find(JSON.parse(queryString));
-
-    // sorting
-    if (req.query.sort) {
-      // sort('price duration ratingsAverage')
-      const sortFields = req.query.sort.split(",").join(" ");
-      query = query.sort(sortFields);
-    }
-
-    // limiting fields or projecting
-    if (req.query.fields) {
-      // sort('price duration ratingsAverage')
-      const limitFields = req.query.fields.split(",").join(" ");
-      query = query.select(limitFields);
-    } else {
-      query = query.select("-__v");
-    }
-
-    // pagination & Limit resource
-    const page = +req.query.page || 1;
-
-    const limit = +req.query.limit || 100;
-
-    const skip = (page - 1) * limit;
-
-    query = query.skip(skip).limit(limit);
-
-    if (req.query.page) {
-      const numTours = await Tour.countDocuments();
-      if (skip >= numTours) throw new Error("This page doesn't exists!");
-    }
-    // execute query
-    const tours = await query;
     res.status(200).json({
       message: "Success",
       results: tours.length,
@@ -134,6 +96,82 @@ exports.deleteTour = async (req, res) => {
     res.status(204).json({
       message: "Success",
       data: null,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 400,
+      message: err,
+    });
+  }
+};
+
+exports.getTourStats = async (req, res) => {
+  try {
+    const stats = await Tour.aggregate([
+      {
+        $match: { ratingsAverage: { $gte: 4.5 } },
+      },
+      {
+        $group: {
+          _id: "$difficulty",
+          totalTours: { $sum: 1 },
+          totalRatings: { $sum: "$ratingsQuantity" },
+          avgRatings: { $avg: "$ratingsAverage" },
+          avgPrice: { $avg: "$price" },
+          minPrice: { $min: "$price" },
+          maxPrice: { $max: "$price" },
+        },
+      },
+    ]);
+    res.status(200).json({
+      message: "Success",
+      data: stats,
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 400,
+      message: err,
+    });
+  }
+};
+
+exports.getTourMonthly = async (req, res) => {
+  try {
+    const { year } = req.params;
+
+    const plan = await Tour.aggregate([
+      {
+        $unwind: "$startDates",
+      },
+      {
+        $match: {
+          startDates: {
+            $gte: new Date(`${year}-01-01`),
+            $lte: new Date(`${year}-12-31`),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: { $month: "$startDates" },
+          numTourStarts: { $sum: 1 },
+          name: { $push: "$name" },
+        },
+      },
+      {
+        $addFields: { month: "$_id" },
+      },
+      {
+        $project: { _id: 0 },
+      },
+      {
+        $sort: { numTourStarts: -1 },
+      },
+    ]);
+
+    res.status(200).json({
+      message: "Success",
+      data: plan,
     });
   } catch (err) {
     res.status(400).json({
