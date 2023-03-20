@@ -30,12 +30,14 @@ exports.getAllTour = catchAsync(async (req, res, next) => {
 });
 exports.getTour = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(new AppError("No tour with this ID", 404));
-  }
+  // if (!mongoose.Types.ObjectId.isValid(id)) {
+  //   return next(new AppError("No tour with this ID", 404));
+  // }
 
   const tour = await Tour.findById(id);
-
+  if (!tour) {
+    return next(new AppError("No tour with this ID", 404));
+  }
   res.status(200).json({
     message: "Success",
     data: {
@@ -57,13 +59,16 @@ exports.createTour = catchAsync(async (req, res, next) => {
 exports.updateTour = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return next(new AppError("No tour with this ID", 404));
-  }
+  // if (!mongoose.Types.ObjectId.isValid(id)) {
+  //   return next(new AppError("No tour with this ID", 404));
+  // }
   const tour = await Tour.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   });
+  if (!tour) {
+    return next(new AppError("No tour with this ID", 404));
+  }
   res.status(201).json({
     message: "Success",
     data: {
