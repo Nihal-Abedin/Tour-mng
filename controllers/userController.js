@@ -1,7 +1,7 @@
 const User = require("../models/userModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-
+const factoryHandeler = require("./handelerFactory");
 const filteredBody = (body, ...allowedFields) => {
   const filterResults = {};
   Object.keys(body).forEach((el) => {
@@ -12,37 +12,22 @@ const filteredBody = (body, ...allowedFields) => {
 
   return filterResults;
 };
+exports.getme = (req, res, next) => {
+  req.params.id = req.user.id;
+  next();
+};
+exports.getAllUsers = factoryHandeler.getAll(User);
+exports.getUser = factoryHandeler.getOne(User);
+exports.updateUser = factoryHandeler.updateOne(User);
+exports.deleteUser = factoryHandeler.deleteOne(User);
+exports.getUser = factoryHandeler.getOne(User);
 
-exports.getAllUsers = catchAsync(async (req, res) => {
-  const users = await User.find();
-  res.status(500).json({
-    message: "Success!",
-    data: {
-      total_users: users.length,
-      users,
-    },
-  });
-});
-exports.getUser = (req, res) => {
-  res.status(500).json({
-    message: "This toute is yet to define!",
-  });
-};
-exports.updateUser = (req, res) => {
-  res.status(500).json({
-    message: "This toute is yet to define!",
-  });
-};
 exports.createUser = (req, res) => {
   res.status(500).json({
-    message: "This toute is yet to define!",
+    message: "Please use Signup!",
   });
 };
-exports.deleteUser = (req, res) => {
-  res.status(500).json({
-    message: "This toute is yet to define!",
-  });
-};
+
 exports.updateMe = catchAsync(async (req, res, next) => {
   if (req.body.password || req.body.confirm_password) {
     return next(

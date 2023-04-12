@@ -49,21 +49,21 @@ const userSchema = new mongoose.Schema({
 });
 
 // pre save Document middleware
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-  this.password = await bcrypt.hash(this.password, 12);
-  this.confirm_password = undefined;
-});
+// userSchema.pre("save", async function (next) {
+//   if (!this.isModified("password")) {
+//     return next();
+//   }
+//   this.password = await bcrypt.hash(this.password, 12);
+//   this.confirm_password = undefined;
+// });
 
-userSchema.pre("save", function (next) {
-  if (!this.isModified("password") || this.isNew) {
-    return next();
-  }
-  this.passwordChangedAt = Date.now() - 1000;
-  next();
-});
+// userSchema.pre("save", function (next) {
+//   if (!this.isModified("password") || this.isNew) {
+//     return next();
+//   }
+//   this.passwordChangedAt = Date.now() - 1000;
+//   next();
+// });
 
 // Query Middleware
 
@@ -93,7 +93,6 @@ userSchema.methods.createPasswordResetToken = function () {
     .createHash("sha256")
     .update(token)
     .digest("hex");
-  console.log({ token }, { resetToken: this.passwordResetToken });
   this.passwordResetTokenExpires = Date.now() + 10 * 60 * 1000;
   return token;
 };

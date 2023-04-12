@@ -8,6 +8,7 @@ const {
   updateUser,
   updateMe,
   deleteMe,
+  getme,
 } = require("../controllers/userController");
 const {
   signup,
@@ -16,6 +17,7 @@ const {
   resetPassword,
   isAuthorized,
   updatePassword,
+  allowAccessRoles,
 } = require("../controllers/authController");
 const router = express.Router();
 
@@ -23,9 +25,17 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.post("/forgetPassword", forgetPassword);
 router.post("/resetPassword/:resetToken", resetPassword);
-router.patch("/updatePassword", isAuthorized, updatePassword);
-router.patch("/updateMe", isAuthorized, updateMe);
-router.delete("/deleteMe", isAuthorized, deleteMe);
+
+// after this middleware all of the routes are protected
+router.use(isAuthorized);
+
+router.patch("/updatePassword", updatePassword);
+
+router.get("/me", getme, getUser);
+router.patch("/updateMe", updateMe);
+router.delete("/deleteMe", deleteMe);
+
+router.use(allowAccessRoles("admin"));
 
 router.route("/").get(getAllUsers).post(createUser);
 router.route("/:id").get(getUser).patch(updateUser).delete(deleteUser);
